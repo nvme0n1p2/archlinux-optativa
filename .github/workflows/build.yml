@@ -7,6 +7,9 @@ on:
 jobs:
   build:
     runs-on: archlinux:latest
+    container:
+      image: archlinux:latest
+      options: --privileged
     permissions:
       contents: read
       packages: write
@@ -16,10 +19,10 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install archiso
-        run: sudo pacman -S archiso
+        run: pacman -Syyu --noconfirm && pacman -S archiso grub --noconfirm
 
       - name: Build bootstrap tarball
-        run: sudo mkarchiso -v -r -w /tmp/archiso-tmp -o ../output/ ./archsource/
+        run: mkarchiso -v -r -w /tmp/archiso-tmp -o ../output/ ./archsource/
 
       - name: Log in to ghcr.io
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
