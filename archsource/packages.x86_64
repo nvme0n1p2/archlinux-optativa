@@ -37,3 +37,5 @@ zsh
 fastfetch
 nano-syntax-highlighting
 which
+reflector
+archlinux-keyring
