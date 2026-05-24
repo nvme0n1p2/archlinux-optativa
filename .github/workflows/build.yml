@@ -1,7 +1,7 @@
 name: Build Arch images
 on:
   push:
-    branches: [main]
+    branches: [main, dev]
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -15,6 +15,12 @@ jobs:
 
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Mount pseudofs
+        run: |
+          mount -t proc proc /proc || true
+          mount -t sysfs sys /sys || true
+          mount -t devtmpfs dev /dev || true
 
       - name: Install dependencies
         run: pacman -Syyu --noconfirm && pacman -S archiso grub docker cdrkit bash fish zsh which nodejs --noconfirm

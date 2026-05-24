@@ -17,4 +17,5 @@ bootstrap_tarball_compression=(xz -9e)
 file_permissions=(
   ["/etc/shadow"]="0:0:400"
   ["/etc/gshadow"]="0:0:0400"
+  ["/root/customize_airootfs.sh"]="0:0:755"
 )
