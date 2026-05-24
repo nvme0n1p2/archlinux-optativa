@@ -1,9 +1,7 @@
 name: Build Arch images
-
 on:
   push:
     branches: [main]
-
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -13,39 +11,45 @@ jobs:
     permissions:
       contents: write
       packages: write
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
       - name: Install dependencies
-        run: pacman -Syyu --noconfirm && pacman -S archiso grub docker --noconfirm
-
-
+        run: pacman -Syyu --noconfirm && pacman -S archiso grub docker cdrkit --noconfirm
       - name: Build bootstrap tarball & iso
         run: mkarchiso -v -r -w /tmp/archiso-tmp -o ./output/ ./archsource/
-
+      - name: Validate ISO
+        run: |
+          ISO=$(ls ./output/archlinux-optativa-*.iso)
+          echo "ISO size: $(du -sh $ISO)"
+          file $ISO | grep -q "ISO 9660" || (echo "Not a valid ISO!" && exit 1)
+          MIN_BYTES=100000000
+          SIZE=$(stat -c%s "$ISO")
+          [ "$SIZE" -gt "$MIN_BYTES" ] || (echo "ISO too small: $SIZE bytes" && exit 1)
+          isoinfo -l -i "$ISO" | grep -iE "(grub|efi|boot)" || \
+            (echo "No boot files found in ISO" && exit 1)
       - name: Start docker daemon
         run: dockerd &>/tmp/dockerd.log & sleep 5
-
       - name: Log in to ghcr.io
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-
       - name: Generate docker image
         run: docker import ./output/archlinux-optativa-bootstrap-*.tar.xz ghcr.io/${{ github.repository }}:latest
-
       - name: Tag with commit SHA
         run: docker tag ghcr.io/${{ github.repository }}:latest ghcr.io/${{ github.repository }}:${{ github.sha }}
-
       - name: Push images
         run: |
           docker push ghcr.io/${{ github.repository }}:latest
           docker push ghcr.io/${{ github.repository }}:${{ github.sha }}
-
+      - name: Test docker image
+        run: |
+          docker run --rm ghcr.io/${{ github.repository }}:latest bash -c "
+            echo '=== OS Release ===' && cat /etc/os-release &&
+            echo '=== Pacman works ===' && pacman -Q | head -5 &&
+            echo '=== Basic tools ===' && which bash grep awk sed
+          "
       - name: Create date
         id: date
         run: echo "date=$(date +%Y.%m.%d)-${{ github.run_number }}" >> $GITHUB_OUTPUT
-
       - name: Create release
         uses: softprops/action-gh-release@v2
         with:
@@ -54,27 +58,3 @@ jobs:
           files: ./output/archlinux-optativa-*.iso
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-
-	- name: Test docker image
-  	run: |
-    	  docker run --rm ghcr.io/${{ github.repository }}:latest bash -c "
-      	    echo '=== OS Release ===' && cat /etc/os-release &&
-      	    echo '=== Pacman works ===' && pacman -Q | head -5 &&
-      	    echo '=== Basic tools ===' && which bash grep awk sed
-    	  "
-	
-	- name: Validate ISO
-	  run: |
-	    ISO=$(ls ./output/archlinux-optativa-*.iso)
-	    echo "ISO size: $(du -sh $ISO)"
-	    # Must be a valid ISO 9660 filesystem
-	    file $ISO | grep -q "ISO 9660" || (echo "Not a valid ISO!" && exit 1)
-	    # Sanity-check it's not suspiciously small (adjust threshold)
-	    MIN_BYTES=100000000  # 100MB
- 	    SIZE=$(stat -c%s "$ISO")
- 	    [ "$SIZE" -gt "$MIN_BYTES" ] || (echo "ISO too small: $SIZE bytes" && exit 1)
-	    ISO=$(ls ./output/archlinux-optativa-*.iso)
-	    # Check for GRUB EFI or BIOS boot files inside the ISO
-	    isoinfo -l -i "$ISO" | grep -iE "(grub|efi|boot)" || \
-	      (echo "No boot files found in ISO" && exit 1)
