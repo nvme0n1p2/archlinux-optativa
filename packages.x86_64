@@ -10,6 +10,10 @@ pv
 qemu-guest-agent
 syslinux
 virtualbox-guest-utils-nox
+memtest86+-efi
+memtest86+
+grub
+edk2-shell
 
 amd-ucode
 nano
