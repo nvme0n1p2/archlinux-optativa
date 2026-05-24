@@ -1,0 +1,36 @@
+name: Build Arch images
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: archlinux:latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install archiso
+        run: sudo pacman -S archiso
+
+      - name: Build bootstrap tarball
+        run: sudo mkarchiso -v -r -w /tmp/archiso-tmp -o ../output/ ./archsource/
+
+      - name: Log in to ghcr.io
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+      - name: Import into Docker
+        run: docker import ./output/archlinux-optativa-bootstrap-*.xz ghcr.io/${{ github.repository }}:latest
+
+      - name: Tag with commit SHA
+        run: docker tag ghcr.io/${{ github.repository }}:latest ghcr.io/${{ github.repository }}:${{ github.sha }}
+
+      - name: Push images
+        run: |
+          docker push ghcr.io/${{ github.repository }}:latest
+          docker push ghcr.io/${{ github.repository }}:${{ github.sha }}
