@@ -54,3 +54,27 @@ jobs:
           files: ./output/archlinux-optativa-*.iso
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+
+	- name: Test docker image
+  	run: |
+    	  docker run --rm ghcr.io/${{ github.repository }}:latest bash -c "
+      	    echo '=== OS Release ===' && cat /etc/os-release &&
+      	    echo '=== Pacman works ===' && pacman -Q | head -5 &&
+      	    echo '=== Basic tools ===' && which bash grep awk sed
+    	  "
+	
+	- name: Validate ISO
+	  run: |
+	    ISO=$(ls ./output/archlinux-optativa-*.iso)
+	    echo "ISO size: $(du -sh $ISO)"
+	    # Must be a valid ISO 9660 filesystem
+	    file $ISO | grep -q "ISO 9660" || (echo "Not a valid ISO!" && exit 1)
+	    # Sanity-check it's not suspiciously small (adjust threshold)
+	    MIN_BYTES=100000000  # 100MB
+ 	    SIZE=$(stat -c%s "$ISO")
+ 	    [ "$SIZE" -gt "$MIN_BYTES" ] || (echo "ISO too small: $SIZE bytes" && exit 1)
+	    ISO=$(ls ./output/archlinux-optativa-*.iso)
+	    # Check for GRUB EFI or BIOS boot files inside the ISO
+	    isoinfo -l -i "$ISO" | grep -iE "(grub|efi|boot)" || \
+	      (echo "No boot files found in ISO" && exit 1)
