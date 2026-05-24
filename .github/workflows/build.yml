@@ -15,7 +15,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Install dependencies
-        run: pacman -Syyu --noconfirm && pacman -S archiso grub docker cdrkit --noconfirm
+        run: pacman -Syyu --noconfirm && pacman -S archiso grub docker cdrkit bash fish zsh --noconfirm
       - name: Build bootstrap tarball & iso
         run: mkarchiso -v -r -w /tmp/archiso-tmp -o ./output/ ./archsource/
       - name: Validate ISO
