@@ -11,7 +11,7 @@ jobs:
       image: archlinux:latest
       options: --privileged
     permissions:
-      contents: read
+      contents: write
       packages: write
 
     steps:
@@ -51,6 +51,6 @@ jobs:
         with:
           tag_name: ${{ steps.date.outputs.date }}
           name: Build ${{ steps.date.outputs.date }}
-          files: ./output/archlinux-optativa-*.iso
+          files: ./output/archlinux-optativa-bootstrap-*.iso
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
