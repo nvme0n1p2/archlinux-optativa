@@ -6,7 +6,7 @@ on:
 
 jobs:
   build:
-    runs-on: archlinux:latest
+    runs-on: archlinux
     container:
       image: archlinux:latest
       options: --privileged
