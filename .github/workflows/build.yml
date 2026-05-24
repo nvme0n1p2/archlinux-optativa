@@ -42,12 +42,15 @@ jobs:
 
       - name: Generate docker image
         run: |
-          mkdir -p /tmp/bootstrap
-          tar -xJf ./output/archlinux-optativa-bootstrap-*.tar.xz -C /tmp/bootstrap/
-          tar -C /tmp/bootstrap/root.x86_64 -c . | docker import - \
-          --change "CMD [\"/usr/bin/bash\"]" \
-          --change "ENV PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin" \
-          ghcr.io/nvme0n1p2/archlinux-optativa:latest
+          mkdir -p /tmp/iso /tmp/airootfs
+          ISO=$(ls ./output/archlinux-optativa-*.iso | grep -v bootstrap)
+          mount -o loop,ro "$ISO" /tmp/iso
+          unsquashfs -d /tmp/airootfs /tmp/iso/arch/x86_64/airootfs.sfs
+          tar -C /tmp/airootfs -c . | docker import - \
+            --change "CMD [\"/usr/bin/bash\"]" \
+            --change "ENV PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin" \
+            ghcr.io/nvme0n1p2/archlinux-optativa:latest
+          umount /tmp/iso
 
       - name: Tag with commit SHA
         run: docker tag ghcr.io/${{ github.repository }}:latest ghcr.io/${{ github.repository }}:${{ github.sha }}

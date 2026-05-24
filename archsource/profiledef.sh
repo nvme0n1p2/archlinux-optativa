@@ -7,12 +7,12 @@ iso_publisher="Arch Linux <https://archlinux.org>"
 iso_application="Arch Linux Optativa"
 iso_version="$(date --date="@${SOURCE_DATE_EPOCH:-$(date +%s)}" +%Y.%m.%d)"
 install_dir="arch"
-buildmodes=('iso' 'bootstrap')
+buildmodes=('iso')
 bootmodes=('bios.syslinux'
            'uefi.grub')
 pacman_conf="pacman.conf"
-airootfs_image_type="erofs"
-airootfs_image_tool_options=('-zlzma,109' -E 'ztailpacking')
+airootfs_image_type="squashfs"
+airootfs_image_tool_options=('-comp' 'xz')
 bootstrap_tarball_compression=(xz -9e)
 file_permissions=(
   ["/etc/shadow"]="0:0:400"
