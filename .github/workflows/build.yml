@@ -18,11 +18,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install archiso
+      - name: Install dependencies
         run: pacman -Syyu --noconfirm && pacman -S archiso grub docker --noconfirm
 
 
-      - name: Build bootstrap tarball
+      - name: Build bootstrap tarball & iso
         run: mkarchiso -v -r -w /tmp/archiso-tmp -o ./output/ ./archsource/
 
       - name: Start docker daemon
@@ -31,7 +31,7 @@ jobs:
       - name: Log in to ghcr.io
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
-      - name: Import into Docker
+      - name: Generate docker image
         run: docker import ./output/archlinux-optativa-bootstrap-*.tar.xz ghcr.io/${{ github.repository }}:latest
 
       - name: Tag with commit SHA
@@ -42,7 +42,7 @@ jobs:
           docker push ghcr.io/${{ github.repository }}:latest
           docker push ghcr.io/${{ github.repository }}:${{ github.sha }}
 
-      - name: Create release
+      - name: Create date
         id: date
         run: echo "date=$(date +%Y.%m.%d)" >> $GITHUB_OUTPUT
 
@@ -51,6 +51,6 @@ jobs:
         with:
           tag_name: ${{ steps.date.outputs.date }}
           name: Build ${{ steps.date.outputs.date }}
-          files: ./output/archlinux-optativa-bootstrap-*.iso
+          files: ./output/archlinux-optativa-*.iso
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
